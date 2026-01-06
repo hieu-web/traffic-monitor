@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  traffic-monitor:
+    # Build từ thư mục hiện tại (.)
+    build: .
+    container_name: traffic_ai_container
+    
+    # Chuyển cổng 5000 của Docker ra cổng 5000 của máy thật
+    ports:
+      - "5000:5000"
+    
+    # Map dữ liệu (Quan trọng để không mất dữ liệu khi tắt Docker)
+    volumes:
+      # 1. Map code: Để bạn sửa code trên máy thật, Docker tự cập nhật theo
+      - .:/app
+      # 2. Map ảnh bằng chứng: Ảnh chụp được sẽ lưu ra máy thật
+      - ./static/evidence:/app/static/evidence
+      # 3. Map database: Giữ lại lịch sử vi phạm
+      - ./traffic.db:/app/traffic.db
+    
+    # Biến môi trường
+    environment:
+      - FLASK_ENV=development
+    
+    # Tự động khởi động lại nếu bị crash
+    restart: unless-stopped
