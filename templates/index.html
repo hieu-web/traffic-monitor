@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Traffic Monitor - Pro</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        body { background: #f8fafc; font-family: 'Segoe UI', sans-serif; }
+        .sidebar { background: white; min-height: 100vh; padding: 25px; border-right: 1px solid #e2e8f0; }
+        input[type=range]::-webkit-slider-thumb { background: #ef4444 !important; height: 18px; width: 18px; border-radius: 50%; -webkit-appearance: none; }
+        .val-label { color: #ef4444; font-weight: bold; float: right; }
+        .video-box { border-radius: 15px; overflow: hidden; background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.2); border: 3px solid #fff; }
+    </style>
+</head>
+<body>
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-3 sidebar">
+            <h4 class="text-primary fw-bold text-center mb-4">🚦 MONITOR DASHBOARD</h4>
+            
+            <form action="/upload_video" method="post" enctype="multipart/form-data" class="mb-4">
+                <input type="file" name="file" class="form-control form-control-sm mb-2" required>
+                <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold">🚀 PROCESS VIDEO</button>
+            </form>
+
+            <div class="card p-3 mb-3 border-0 shadow-sm bg-light">
+                <label class="small fw-bold">Stop Line (%) <span class="val-label" id="v_line">70</span></label>
+                <input type="range" class="form-range" id="stop_line" min="30" max="95" value="70" oninput="updateVal('v_line', this.value)">
+                
+                <label class="small fw-bold mt-2">AI Confidence <span class="val-label" id="v_conf">0.70</span></label>
+                <input type="range" class="form-range" id="conf_threshold" min="0.1" max="1.0" step="0.01" value="0.70" oninput="updateVal('v_conf', this.value)">
+
+                <hr>
+                <h6 class="fw-bold mb-2 small">🚦 LIGHT ROI (%)</h6>
+                <label class="small">ROI X: <span class="val-label" id="v_rx">93</span></label>
+                <input type="range" class="form-range" id="roi_x" min="0" max="100" value="93" oninput="updateVal('v_rx', this.value)">
+                
+                <label class="small mt-2">Width: <span class="val-label" id="v_rw">4</span></label>
+                <input type="range" class="form-range" id="roi_w" min="1" max="50" value="4" oninput="updateVal('v_rw', this.value)">
+            </div>
+
+            <div id="light-box" class="p-3 text-center text-white fw-bold rounded mb-3 bg-secondary">DETECTING...</div>
+
+            <h6 class="fw-bold text-secondary mb-2">📊 VEHICLE COUNTS</h6>
+            <table class="table table-sm table-bordered bg-white shadow-sm mb-3">
+                <tbody>
+                    <tr><td class="ps-3 text-muted">Bus</td><td class="text-end pe-3 fw-bold" id="count-bus">0</td></tr>
+                    <tr><td class="ps-3 text-muted">Car</td><td class="text-end pe-3 fw-bold" id="count-car">0</td></tr>
+                    <tr><td class="ps-3 text-muted">Motorcycle</td><td class="text-end pe-3 fw-bold" id="count-motor">0</td></tr>
+                    <tr><td class="ps-3 text-muted">Truck</td><td class="text-end pe-3 fw-bold" id="count-truck">0</td></tr>
+                </tbody>
+            </table>
+            
+            <a href="/history_page" class="btn btn-dark btn-sm w-100 fw-bold shadow">📋 VIEW FULL DATABASE</a>
+        </div>
+
+        <div class="col-md-6 py-4 px-3 text-center">
+            <div class="video-box"><img src="/video_feed" style="width: 100%;"></div>
+            <div class="row mt-4">
+                <div class="col-6"><div class="card p-3 border-primary border-5 border-start shadow-sm"><h6>Total Flow</h6><h2 id="total-count">0</h2></div></div>
+                <div class="col-6"><div class="card p-3 border-danger border-5 border-start shadow-sm text-danger"><h6>Violations</h6><h2 id="violation-count">0</h2></div></div>
+            </div>
+        </div>
+
+        <div class="col-md-3 py-4 text-center">
+            <h5 class="fw-bold mb-3 text-secondary border-bottom pb-2">📸 PANORAMIC EVIDENCE</h5>
+            <div id="violation-list" style="height: 85vh; overflow-y: auto;"></div>
+        </div>
+    </div>
+</div>
+<script>
+    const socket = io();
+    function updateVal(id, val) { document.getElementById(id).innerText = val; sync(); }
+    function sync() {
+        fetch('/update_config', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({
+            stop_line: document.getElementById('stop_line').value,
+            conf_threshold: document.getElementById('conf_threshold').value,
+            roi_x: document.getElementById('roi_x').value,
+            roi_w: document.getElementById('roi_w').value,
+            roi_h: 14, roi_y: 0
+        })});
+    }
+    socket.on('update_ui', (data) => {
+        document.getElementById('total-count').innerText = data.stats.Total;
+        document.getElementById('violation-count').innerText = data.stats.Violation;
+        document.getElementById('count-bus').innerText = data.stats.Bus || 0;
+        document.getElementById('count-car').innerText = data.stats.Car || 0;
+        document.getElementById('count-motor').innerText = data.stats.Motorcycle || 0;
+        document.getElementById('count-truck').innerText = data.stats.Truck || 0;
+
+        const lb = document.getElementById('light-box');
+        lb.innerText = "LIGHT: " + data.light_status;
+        lb.style.background = data.light_status === "RED" ? "#ef4444" : (data.light_status === "GREEN" ? "#22c55e" : "#64748b");
+        
+        if (data.violation) {
+            const card = `<div class="card mb-3 shadow border-0 overflow-hidden">
+                <img src="/static/evidence/${data.violation.img}" class="w-100">
+                <div class="p-2 small fw-bold bg-danger text-white">BẰNG CHỨNG TOÀN CẢNH: ${data.violation.type}</div>
+            </div>`;
+            document.getElementById('violation-list').insertAdjacentHTML('afterbegin', card);
+        }
+    });
+</script>
+</body>
+</html>
