@@ -5,15 +5,15 @@
 ![YOLOv8](https://img.shields.io/badge/YOLO-v8-yellow.svg)
 ![Docker](https://img.shields.io/badge/Docker-Supported-blue.svg)
 
-**AI Traffic Monitor** là hệ thống giám sát giao thông thông minh, sử dụng Computer Vision để tự động phát hiện và ghi lại bằng chứng các phương tiện vượt đèn đỏ. Dự án được tối ưu hóa để loại bỏ các trường hợp báo lỗi sai nhờ logic "Vượt Hẳn Vạch" (Strict Crossing Logic).
+**AI Traffic Monitor** là hệ thống giám sát giao thông thông minh, sử dụng Computer Vision để tự động phát hiện và ghi lại bằng chứng các phương tiện vượt đèn đỏ. Dự án được tối ưu hóa để loại bỏ các trường hợp báo lỗi sai .
 
 ## 🚀 Tính Năng Nổi Bật
 
 * **🎯 Nhận diện chính xác:** Sử dụng mô hình **YOLOv8** để phân loại: Xe máy, Ô tô, Xe buýt, Xe tải.
-* **🚦 Logic Vượt Đèn Đỏ Khắt Khe:** Hệ thống chỉ báo vi phạm khi **toàn bộ thân xe** (từ đầu đến đuôi) đã vượt qua vạch dừng khi đèn đang đỏ. Loại bỏ hoàn toàn lỗi báo sớm.
+* **🚦 Logic Vượt Đèn Đỏ :** Hệ thống báo vi phạm khi xe đã vượt qua vạch dừng khi đèn đang đỏ. 
 * **⚖️ Ổn định tín hiệu đèn:** Sử dụng thuật toán đệm (Buffer 15 frames) giúp trạng thái đèn (Xanh/Đỏ) không bị nhấp nháy do nhiễu sáng.
 * **📸 Bằng chứng toàn cảnh:** Tự động chụp và lưu ảnh hiện trường bao gồm cả: Xe vi phạm + Vạch kẻ đường + Trạng thái đèn đỏ tại thời điểm đó.
-* **🎛️ Dashboard điều khiển:** Giao diện web cho phép tùy chỉnh vị trí vạch dừng (Stop Line) và vùng nhận diện đèn (ROI) theo thời gian thực mà không cần sửa code.
+* **🎛️ Dashboard điều khiển:** Giao diện web cho phép tùy chỉnh vị trí vạch dừng (Stop Line) và vùng nhận diện đèn (ROI) theo thời gian thực.
 * **🐳 Hỗ trợ Docker:** Dễ dàng triển khai (Deploy) trên mọi máy tính chỉ với 1 lệnh.
 
 ## 🛠️ Công Nghệ Sử Dụng
