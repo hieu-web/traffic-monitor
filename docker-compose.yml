@@ -12,7 +12,7 @@ services:
     
     # Map dữ liệu (Quan trọng để không mất dữ liệu khi tắt Docker)
     volumes:
-      # 1. Map code: Để bạn sửa code trên máy thật, Docker tự cập nhật theo
+      # 1. Map code: Docker tự cập nhật theo
       - .:/app
       # 2. Map ảnh bằng chứng: Ảnh chụp được sẽ lưu ra máy thật
       - ./static/evidence:/app/static/evidence
