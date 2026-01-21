@@ -1,0 +1,19 @@
+# Bỏ qua file biên dịch Python
+__pycache__/
+*.pyc
+
+# Bỏ qua cơ sở dữ liệu 
+traffic.db
+
+# Bỏ qua video upload và ảnh bằng chứng 
+static/uploads/*
+static/evidence/*
+
+# Giữ lại thư mục rỗng 
+!static/uploads/.gitkeep
+!static/evidence/.gitkeep
+
+# Bỏ qua môi trường ảo 
+venv/
+env/
+.env
