@@ -47,15 +47,17 @@ The system is optimized to reduce false positives and ensure stable, reliable de
 ### Method 2
 
 1. **Install dependencies:**
-
+   ```bash
      pip install -r requirements.txt
+
 2.**Run the application:**
-
+   ```bash
      python app.py
-3.**Access the system:**
 
+3.**Access the system:**
+   ```bash
      Open your browser and go to http://localhost:5000
-     
+
 ## 📖 Dashboard User Guide
 
 1.**Upload Video**
