@@ -1,85 +1,52 @@
-# 🚦 AI Traffic Monitor - Hệ Thống Phát Hiện Vượt Đèn Đỏ
+# 🚦 AI Traffic Monitor – Red Light Violation Detection System
 
-![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)
-![Flask](https://img.shields.io/badge/Flask-2.0+-green.svg)
 ![YOLOv8](https://img.shields.io/badge/YOLO-v8-yellow.svg)
 ![Docker](https://img.shields.io/badge/Docker-Supported-blue.svg)
 
-**AI Traffic Monitor** là hệ thống giám sát giao thông thông minh, sử dụng Computer Vision để tự động phát hiện và ghi lại bằng chứng các phương tiện vượt đèn đỏ. Dự án được tối ưu hóa để loại bỏ các trường hợp báo lỗi sai .
+**AI Traffic Monitor** is an intelligent traffic surveillance system that uses Computer Vision to automatically detect and record evidence of vehicles running red lights.  
+The system is optimized to reduce false positives and ensure stable, reliable detection.
 
-## 🚀 Tính Năng Nổi Bật
+---
 
-* **🎯 Nhận diện chính xác:** Sử dụng mô hình **YOLOv8** để phân loại: Xe máy, Ô tô, Xe buýt, Xe tải.
-* **🚦 Logic Vượt Đèn Đỏ :** Hệ thống báo vi phạm khi xe đã vượt qua vạch dừng khi đèn đang đỏ. 
-* **⚖️ Ổn định tín hiệu đèn:** Sử dụng thuật toán đệm (Buffer 15 frames) giúp trạng thái đèn (Xanh/Đỏ) không bị nhấp nháy do nhiễu sáng.
-* **📸 Bằng chứng toàn cảnh:** Tự động chụp và lưu ảnh hiện trường bao gồm cả: Xe vi phạm + Vạch kẻ đường + Trạng thái đèn đỏ tại thời điểm đó.
-* **🎛️ Dashboard điều khiển:** Giao diện web cho phép tùy chỉnh vị trí vạch dừng (Stop Line) và vùng nhận diện đèn (ROI) theo thời gian thực.
-* **🐳 Hỗ trợ Docker:** Dễ dàng triển khai (Deploy) trên mọi máy tính chỉ với 1 lệnh.
+## 🚀 Key Features
 
-## 🛠️ Công Nghệ Sử Dụng
+* **🎯 Accurate Detection:** Uses the **YOLOv8** model to classify vehicles such as motorcycles, cars, buses, and trucks.
+* **🚦 Red Light Violation Logic:** The system reports a violation when a vehicle crosses the stop line while the traffic light is red.
+* **⚖️ Stable Traffic Light State:** A buffering algorithm (15 frames) is used to prevent traffic light state flickering (green/red) caused by lighting noise.
+* **📸 Full-Scene Evidence:** Automatically captures and stores violation images including the violating vehicle, stop line, and red light state at that moment.
+* **🎛️ Control Dashboard:** A web-based interface allows real-time adjustment of the stop line position and traffic light detection region (ROI).
+* **🐳 Docker Support:** Easy deployment on any machine using a single command.
+
+---
+
+## 🛠️ Technologies Used
 
 * **Core AI:** Ultralytics YOLOv8
-* **Xử lý ảnh:** OpenCV (cv2)
+* **Image Processing:** OpenCV (cv2)
 * **Backend:** Flask, Flask-SocketIO
 * **Frontend:** HTML5, Bootstrap 5, Socket.IO
 * **Database:** SQLite
 * **Containerization:** Docker & Docker Compose
 
-## ⚙️ Cài Đặt & Sử Dụng
+---
 
-cách 1
+## ⚙️ Installation & Usage
 
+### Method 1
 
-1.  **Tải source code:**
-    ```bash
-    git clone [https://github.com/USERNAME/traffic-monitor.git](https://github.com/USERNAME/traffic-monitor.git)
-    cd traffic-monitor
-    ```
-2.  **Khởi chạy:**
-    ```bash
-    docker-compose up --build
-    ```
-3.  **Truy cập:** Mở trình duyệt vào `http://localhost:5000`
+1. **Download the source code:**
+   ```bash
+   git clone https://github.com/USERNAME/traffic-monitor.git
+   cd traffic-monitor
+2. **Run the application**
+   docker-compose up --build
+3. **Access the system:**
+   Open your browser and go to http://localhost:5000
+### Method 2
 
-cách 2
-
-1.  **Cài đặt thư viện:**
-    ```bash
-    pip install -r requirements.txt
-    ```
-2.  **Chạy ứng dụng:**
-    ```bash
-    python app.py
-    ```
-3.  **Truy cập:** Mở trình duyệt vào `http://localhost:5000`
-
-## 📖 Hướng Dẫn Trên Dashboard
-
-1.  **Upload Video:** Nhấn nút `Choose Video` để tải video giao thông lên.
-2.  **Chỉnh Vạch Dừng (Stop Line):**
-    * Kéo thanh trượt **Stop Line (%)**.
-    * *Mẹo:* Nên kéo vạch thấp xuống một chút (khoảng 70-80%) để đảm bảo tính chính xác.
-3.  **Chỉnh Vùng Đèn (Light ROI):**
-    * Dùng thanh trượt **ROI X** và **ROI Width** để khoanh vùng trúng cột đèn giao thông.
-    * Khung ROI càng nhỏ và sát bóng đèn thì nhận diện càng chuẩn.
-4.  **Xem Kết Quả:**
-    * **Khung Xanh:** Xe đi đúng luật.
-    * **Khung Đỏ:** Xe vi phạm (hệ thống sẽ tự động chụp ảnh và đẩy sang cột bên phải).
-
-## 📂 Cấu Trúc Thư Mục
-
-```text
-traffic-monitor/
-├── app.py              # Server Flask chính
-├── traffic_core.py     # Logic AI cốt lõi (Xử lý ảnh & YOLO)
-├── Dockerfile          # Cấu hình môi trường Docker
-├── docker-compose.yml  # Cấu hình chạy Docker
-├── requirements.txt    # Danh sách thư viện Python
-├── models/
-│   └── best.pt         # File trọng số model YOLOv8
-├── static/
-│   ├── evidence/       # Thư mục chứa ảnh chụp vi phạm
-│   └── uploads/        # Thư mục chứa video tải lên
-├── templates/
-│   └── index.html      # Giao diện chính
-└── traffic.db          # Cơ sở dữ liệu SQLite
+1. **Install dependencies:**
+     pip install -r requirements.txt
+2.**Run the application:**
+     python app.py
+3.**Access the system:**
+     Open your browser and go to http://localhost:5000
