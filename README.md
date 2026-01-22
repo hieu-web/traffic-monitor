@@ -36,7 +36,7 @@ The system is optimized to reduce false positives and ensure stable, reliable de
 
 1.  **Download the source code:**
     ```bash
-    git clone [https://github.com/USERNAME/traffic-monitor.git](https://github.com/USERNAME/traffic-monitor.git)
+    git clone [https://github.com/hieu-web/traffic-monitor.git](https://github.com/hieu-web/traffic-monitor.git)
     cd traffic-monitor
     ```
 2.  **Run the application:**
