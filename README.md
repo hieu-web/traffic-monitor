@@ -32,52 +32,55 @@ The system is optimized to reduce false positives and ensure stable, reliable de
 
 ## ⚙️ Installation & Usage
 
-### Method 1
+### Method 1: Docker (Recommended)
 
-1. **Download the source code:**
-   ```bash
-   git clone https://github.com/USERNAME/traffic-monitor.git
-   cd traffic-monitor
-2. **Run the application**
-   ```bash
-   docker-compose up --build
-3. **Access the system:**
-   ```bash
-   Open your browser and go to http://localhost:5000
-### Method 2
+1.  **Download the source code:**
+    ```bash
+    git clone [https://github.com/USERNAME/traffic-monitor.git](https://github.com/USERNAME/traffic-monitor.git)
+    cd traffic-monitor
+    ```
+2.  **Run the application:**
+    ```bash
+    docker-compose up --build
+    ```
+3.  **Access the system:**
+    Open your browser and go to `http://localhost:5000`
 
-1. **Install dependencies:**
-   ```bash
-     pip install -r requirements.txt
+### Method 2: Local Installation
 
-2.**Run the application:**
-   ```bash
-     python app.py
+1.  **Install dependencies:**
+    ```bash
+    pip install -r requirements.txt
+    ```
+2.  **Run the application:**
+    ```bash
+    python app.py
+    ```
+3.  **Access the system:**
+    Open your browser and go to `http://localhost:5000`
 
-3.**Access the system:**
-   ```bash
-     Open your browser and go to http://localhost:5000
+---
 
 ## 📖 Dashboard User Guide
 
-1.**Upload Video**
+### 1. Upload Video
+Click **Choose Video** to upload a traffic video for analysis.
 
-Click Choose Video to upload a traffic video.
+### 2. Adjust Stop Line
+Use the **Stop Line (%)** slider to position the detection boundary.
+* **Recommended value:** 70–80%
 
-2.**Adjust Stop Line**
+### 3. Adjust Traffic Light ROI
+Use **ROI X** and **ROI Width** sliders to define the traffic light area.
+* **Tip:** Keep the ROI tight around the traffic light bulb for best accuracy.
 
-Use the Stop Line (%) slider
 
-Recommended value: 70–80%
 
-3.**Adjust Traffic Light ROI**
+### 4. View Results
+* **Green Box:** Vehicle is compliant.
+* **Red Box:** Red light violation (evidence image is automatically saved to the system).
 
-Use ROI X and ROI Width sliders
-
-Keep the ROI tight around the traffic light bulb for best accuracy
-
-4.**View Results**
-
-Green Box: Vehicle is compliant
-
-Red Box: Red light violation (evidence image is automatically saved)
+| Visual Indicator | Meaning | System Action |
+| :--- | :--- | :--- |
+| **Green Box** | Compliant | No violation detected. |
+| **Red Box** | **Violation** | Red light violation detected; evidence image saved. |
