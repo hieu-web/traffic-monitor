@@ -84,3 +84,30 @@ Use **ROI X** and **ROI Width** sliders to define the traffic light area.
 | :--- | :--- | :--- |
 | **Green Box** | Compliant | No violation detected. |
 | **Red Box** | **Violation** | Red light violation detected; evidence image saved. |
+
+
+---
+
+## 📂 Project Structure
+
+
+
+```text
+traffic-monitor/
+├── models/             # Contains AI model files
+│   └── best.pt         # YOLOv8 trained weights for vehicle/light detection
+├── static/             # Frontend assets and storage
+│   ├── evidence/       # Automatically saved images of red light violations
+│   ├── uploads/        # Directory for uploaded traffic videos
+│   ├── charts.js       # Logic for data visualization
+│   └── style.css       # Main stylesheet for the dashboard
+├── templates/          # HTML UI components
+│   ├── index.html      # Main monitoring dashboard
+│   └── history.html    # Page to view past violation records
+├── app.py              # Main Flask backend and WebSocket server
+├── traffic_core.py     # Core AI processing and violation logic
+├── traffic.db          # SQLite database for storing violation logs
+├── Dockerfile          # Instructions for building the Docker image
+├── docker-compose.yml  # Orchestration for running the containerized app
+├── requirements.txt    # List of required Python libraries
+└── .gitignore.txt      # Specifies files for Git to ignore
