@@ -39,30 +39,43 @@ The system is optimized to reduce false positives and ensure stable, reliable de
    git clone https://github.com/USERNAME/traffic-monitor.git
    cd traffic-monitor
 2. **Run the application**
+   ```bash
    docker-compose up --build
 3. **Access the system:**
+   ```bash
    Open your browser and go to http://localhost:5000
 ### Method 2
 
 1. **Install dependencies:**
+
      pip install -r requirements.txt
 2.**Run the application:**
+
      python app.py
 3.**Access the system:**
+
      Open your browser and go to http://localhost:5000
+     
 ## 📖 Dashboard User Guide
 
 1.**Upload Video**
+
 Click Choose Video to upload a traffic video.
 
 2.**Adjust Stop Line**
+
 Use the Stop Line (%) slider
+
 Recommended value: 70–80%
 
 3.**Adjust Traffic Light ROI**
+
 Use ROI X and ROI Width sliders
+
 Keep the ROI tight around the traffic light bulb for best accuracy
 
 4.**View Results**
+
 Green Box: Vehicle is compliant
+
 Red Box: Red light violation (evidence image is automatically saved)
