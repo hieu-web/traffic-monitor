@@ -9,13 +9,16 @@ from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
+app.config['SECRET_KEY'] = 'secret_key'
 socketio = SocketIO(app, cors_allowed_origins="*")
+
 core = TrafficCore()
 
-# Mặc định Confidence 0.7 và thông số ROI
+# Config mặc định
 config = {
-    "stop_line": 70, "conf_threshold": 0.7,
-    "roi_x": 93, "roi_y": 0, "roi_w": 4, "roi_h": 14
+    "stop_line": 70, 
+    "conf_threshold": 0.45, 
+    "roi_x": 85, "roi_y": 10, "roi_w": 8, "roi_h": 15
 }
 current_video = "test.mp4"
 
@@ -26,14 +29,21 @@ def index():
 @app.route('/update_config', methods=['POST'])
 def update_config():
     global config
-    config.update(request.json)
+    data = request.json
+    for key in data:
+        if key in config:
+            config[key] = float(data[key])
     return jsonify({"status": "success"})
+
+@app.route('/reset_stats', methods=['POST'])
+def reset_stats():
+    core.reset_session()
+    return jsonify({"status": "ok"})
 
 @app.route('/upload_video', methods=['POST'])
 def upload_video():
     global current_video
-    if 'file' not in request.files:
-        return redirect(request.url)
+    if 'file' not in request.files: return redirect(request.url)
     file = request.files['file']
     if file and file.filename != '':
         filename = secure_filename(file.filename)
@@ -45,31 +55,41 @@ def upload_video():
 
 @app.route('/api/history')
 def get_history():
-    conn = sqlite3.connect('traffic.db')
-    df = pd.read_sql_query("SELECT * FROM violations ORDER BY id DESC", conn)
-    conn.close()
-    return jsonify(df.to_dict(orient='records'))
+    try:
+        with sqlite3.connect('traffic.db') as conn:
+            df = pd.read_sql_query("SELECT * FROM violations ORDER BY id DESC LIMIT 50", conn)
+        return jsonify(df.to_dict(orient='records'))
+    except: return jsonify([])
 
 @app.route('/history_page')
 def history_page(): return render_template('history.html')
 
 def video_stream():
-    cap = cv2.VideoCapture(current_video)
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if not ret: break
-        frame = cv2.resize(frame, (960, 540))
-        processed_frame, violation = core.process_frame(frame, config)
-        socketio.emit('update_ui', {'stats': core.stats, 'violation': violation, 'light_status': core.last_light_status})
-        _, buffer = cv2.imencode('.jpg', processed_frame)
-        yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-    cap.release()
+    global current_video
+    while True:
+        if not os.path.exists(current_video): break
+        cap = cv2.VideoCapture(current_video)
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret: break
+            
+            frame = cv2.resize(frame, (1280, 720))
+            processed_frame, violation = core.process_frame(frame, config)
+            
+            socketio.emit('update_ui', {
+                'stats': core.stats, 
+                'violation': violation, 
+                'light_status': core.last_light_status
+            })
+            
+            _, buffer = cv2.imencode('.jpg', processed_frame)
+            yield (b'--frame\r\n' b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+        cap.release()
 
 @app.route('/video_feed')
 def video_feed():
     return Response(video_stream(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 if __name__ == '__main__':
-    os.makedirs("static/evidence", exist_ok=True)
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     socketio.run(app, host="0.0.0.0", port=5000, debug=True)
