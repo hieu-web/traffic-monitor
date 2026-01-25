@@ -111,3 +111,6 @@ traffic-monitor/
 ├── docker-compose.yml  # Orchestration for running the containerized app
 ├── requirements.txt    # List of required Python libraries
 └── .gitignore.txt      # Specifies files for Git to ignore
+## 🎥 Demo Video
+
+▶️ [Watch demo video](demo.mp4)
