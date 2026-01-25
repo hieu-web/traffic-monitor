@@ -2,105 +2,196 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>AI Traffic Monitor - Pro</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <title>Traffic AI Control</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <style>
-        body { background: #f8fafc; font-family: 'Segoe UI', sans-serif; }
-        .sidebar { background: white; min-height: 100vh; padding: 25px; border-right: 1px solid #e2e8f0; }
-        input[type=range]::-webkit-slider-thumb { background: #ef4444 !important; height: 18px; width: 18px; border-radius: 50%; -webkit-appearance: none; }
-        .val-label { color: #ef4444; font-weight: bold; float: right; }
-        .video-box { border-radius: 15px; overflow: hidden; background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.2); border: 3px solid #fff; }
+        :root { --primary-red: #ff4d4d; --bg-sidebar: #f4f6f9; }
+        body { background-color: #eef1f6; font-family: 'Segoe UI', sans-serif; height: 100vh; overflow: hidden; }
+        
+        /* Sidebar Styling */
+        .sidebar { background-color: var(--bg-sidebar); border-right: 1px solid #ddd; height: 100vh; overflow-y: auto; padding: 20px; }
+        input[type=range] { accent-color: var(--primary-red); width: 100%; cursor: pointer; }
+        
+        .control-section { margin-bottom: 20px; }
+        .label-group { display: flex; justify-content: space-between; font-weight: 500; font-size: 0.9rem; color: #555; }
+        .value-display { color: var(--primary-red); font-weight: bold; }
+        
+        /* Video Area */
+        .video-wrapper { background: black; border-radius: 10px; overflow: hidden; position: relative; border: 2px solid #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        #video-feed { width: 100%; display: block; }
+        
+        /* Stats Cards Styling */
+        .stat-card { background: white; border-radius: 10px; padding: 10px; margin-bottom: 10px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .stat-num { font-size: 1.6rem; font-weight: bold; }
+        .stat-label { font-size: 0.75rem; text-transform: uppercase; color: #777; font-weight: 600; }
+        
+        /* Traffic Light */
+        .traffic-light-box { background: #222; padding: 10px; border-radius: 20px; display: flex; gap: 10px; justify-content: center; margin-bottom: 20px; }
+        .light { width: 40px; height: 40px; border-radius: 50%; opacity: 0.2; transition: 0.3s; }
+        .light.red.active { background: #ff0000; opacity: 1; box-shadow: 0 0 20px red; }
+        .light.green.active { background: #00ff00; opacity: 1; box-shadow: 0 0 20px lime; }
+
+        .btn-reset { width: 100%; border: 1px solid #ccc; background: white; padding: 8px; border-radius: 5px; color: #333; font-weight: 600; }
+        .btn-reset:hover { border-color: var(--primary-red); color: var(--primary-red); background: #fff0f0; }
+
+        .page-title {
+            font-weight: 800; color: #2c3e50; text-transform: uppercase; letter-spacing: 1px;
+            margin-bottom: 20px; border-bottom: 3px solid var(--primary-red); display: inline-block; padding-bottom: 5px;
+        }
     </style>
 </head>
-<body>
-<div class="container-fluid">
-    <div class="row">
-        <div class="col-md-3 sidebar">
-            <h4 class="text-primary fw-bold text-center mb-4">🚦 MONITOR DASHBOARD</h4>
+<body class="container-fluid">
+    <div class="row h-100">
+        <div class="col-md-3 col-lg-2 sidebar">
+            <h5 class="mb-4 text-secondary"><i class="fas fa-cog me-2"></i>Configuration</h5>
             
-            <form action="/upload_video" method="post" enctype="multipart/form-data" class="mb-4">
-                <input type="file" name="file" class="form-control form-control-sm mb-2" required>
-                <button type="submit" class="btn btn-primary btn-sm w-100 fw-bold">🚀 PROCESS VIDEO</button>
-            </form>
-
-            <div class="card p-3 mb-3 border-0 shadow-sm bg-light">
-                <label class="small fw-bold">Stop Line (%) <span class="val-label" id="v_line">70</span></label>
-                <input type="range" class="form-range" id="stop_line" min="30" max="95" value="70" oninput="updateVal('v_line', this.value)">
-                
-                <label class="small fw-bold mt-2">AI Confidence <span class="val-label" id="v_conf">0.70</span></label>
-                <input type="range" class="form-range" id="conf_threshold" min="0.1" max="1.0" step="0.01" value="0.70" oninput="updateVal('v_conf', this.value)">
-
-                <hr>
-                <h6 class="fw-bold mb-2 small">🚦 LIGHT ROI (%)</h6>
-                <label class="small">ROI X: <span class="val-label" id="v_rx">93</span></label>
-                <input type="range" class="form-range" id="roi_x" min="0" max="100" value="93" oninput="updateVal('v_rx', this.value)">
-                
-                <label class="small mt-2">Width: <span class="val-label" id="v_rw">4</span></label>
-                <input type="range" class="form-range" id="roi_w" min="1" max="50" value="4" oninput="updateVal('v_rw', this.value)">
+            <div class="control-section">
+                <div class="label-group"><span>Stop Line (%)</span><span id="v_stop" class="value-display">70</span></div>
+                <input type="range" id="stop_line" min="10" max="95" value="70" oninput="upd('stop_line', 'v_stop')">
             </div>
 
-            <div id="light-box" class="p-3 text-center text-white fw-bold rounded mb-3 bg-secondary">DETECTING...</div>
+            <div class="control-section">
+                <div class="label-group"><span>AI Confidence</span><span id="v_conf" class="value-display">0.45</span></div>
+                <input type="range" id="conf_threshold" min="0.1" max="1.0" step="0.05" value="0.45" oninput="upd('conf_threshold', 'v_conf')">
+            </div>
 
-            <h6 class="fw-bold text-secondary mb-2">📊 VEHICLE COUNTS</h6>
-            <table class="table table-sm table-bordered bg-white shadow-sm mb-3">
-                <tbody>
-                    <tr><td class="ps-3 text-muted">Bus</td><td class="text-end pe-3 fw-bold" id="count-bus">0</td></tr>
-                    <tr><td class="ps-3 text-muted">Car</td><td class="text-end pe-3 fw-bold" id="count-car">0</td></tr>
-                    <tr><td class="ps-3 text-muted">Motorcycle</td><td class="text-end pe-3 fw-bold" id="count-motor">0</td></tr>
-                    <tr><td class="ps-3 text-muted">Truck</td><td class="text-end pe-3 fw-bold" id="count-truck">0</td></tr>
-                </tbody>
-            </table>
-            
-            <a href="/history_page" class="btn btn-dark btn-sm w-100 fw-bold shadow">📋 VIEW FULL DATABASE</a>
-        </div>
+            <div class="control-section">
+                <h6 class="text-dark mb-3"><i class="fas fa-traffic-light me-2"></i>Light ROI (%)</h6>
+                
+                <small>ROI X</small>
+                <div class="d-flex"><input type="range" id="roi_x" max="100" value="85" oninput="upd('roi_x', 'v_x')"><span id="v_x" class="ms-2 value-display">85</span></div>
+                
+                <small>ROI Y</small>
+                <div class="d-flex"><input type="range" id="roi_y" max="100" value="10" oninput="upd('roi_y', 'v_y')"><span id="v_y" class="ms-2 value-display">10</span></div>
+                
+                <small>ROI Width</small>
+                <div class="d-flex"><input type="range" id="roi_w" max="50" value="8" oninput="upd('roi_w', 'v_w')"><span id="v_w" class="ms-2 value-display">8</span></div>
+                
+                <small>ROI Height</small>
+                <div class="d-flex"><input type="range" id="roi_h" max="50" value="15" oninput="upd('roi_h', 'v_h')"><span id="v_h" class="ms-2 value-display">15</span></div>
+            </div>
 
-        <div class="col-md-6 py-4 px-3 text-center">
-            <div class="video-box"><img src="/video_feed" style="width: 100%;"></div>
-            <div class="row mt-4">
-                <div class="col-6"><div class="card p-3 border-primary border-5 border-start shadow-sm"><h6>Total Flow</h6><h2 id="total-count">0</h2></div></div>
-                <div class="col-6"><div class="card p-3 border-danger border-5 border-start shadow-sm text-danger"><h6>Violations</h6><h2 id="violation-count">0</h2></div></div>
+            <div class="mt-4">
+                <button class="btn-reset" onclick="resetData()"><i class="fas fa-trash me-2"></i>Reset Data</button>
+                <form action="/upload_video" method="post" enctype="multipart/form-data" class="mt-3">
+                    <input type="file" name="file" class="form-control form-control-sm mb-2">
+                    <button class="btn btn-secondary btn-sm w-100">Upload Video</button>
+                </form>
             </div>
         </div>
 
-        <div class="col-md-3 py-4 text-center">
-            <h5 class="fw-bold mb-3 text-secondary border-bottom pb-2">📸 PANORAMIC EVIDENCE</h5>
-            <div id="violation-list" style="height: 85vh; overflow-y: auto;"></div>
+        <div class="col-md-9 col-lg-10 p-4" style="height: 100vh; overflow-y: auto;">
+            <div class="d-flex align-items-center mb-2">
+                <h2 class="page-title"><i class="fas fa-video me-3 text-danger"></i>AI Traffic Violation Monitor System</h2>
+            </div>
+
+            <div class="row">
+                <div class="col-lg-9">
+                    <div class="video-wrapper">
+                        <img id="video-feed" src="{{ url_for('video_feed') }}">
+                        <div id="alert" style="position: absolute; top: 10px; right: 10px; display: none;">
+                            <span class="badge bg-danger fs-5 animate__animated animate__flash">VIOLATION DETECTED</span>
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between mt-3">
+                        <h5 class="text-secondary">Monitoring: {{ current_v }}</h5>
+                        <a href="/history_page" class="btn btn-primary btn-sm">View History Log</a>
+                    </div>
+                </div>
+
+                <div class="col-lg-3">
+                    <div class="traffic-light-box">
+                        <div id="l-red" class="light red"></div>
+                        <div id="l-green" class="light green"></div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-num text-danger" id="s_vio">0</div>
+                        <div class="stat-label">Violations</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-num" id="s_total">0</div>
+                        <div class="stat-label">Total Vehicles</div>
+                    </div>
+                    
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <div class="stat-card py-2 border-success border-bottom border-3">
+                                <div class="stat-num fs-4 text-success" id="s_car">0</div>
+                                <div class="stat-label">Car</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stat-card py-2 border-info border-bottom border-3">
+                                <div class="stat-num fs-4 text-info" id="s_moto">0</div>
+                                <div class="stat-label">Motorbike</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stat-card py-2 border-warning border-bottom border-3">
+                                <div class="stat-num fs-4 text-warning" id="s_bus">0</div>
+                                <div class="stat-label">Bus</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stat-card py-2 border-secondary border-bottom border-3">
+                                <div class="stat-num fs-4 text-secondary" id="s_truck">0</div>
+                                <div class="stat-label">Truck</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
         </div>
     </div>
-</div>
-<script>
-    const socket = io();
-    function updateVal(id, val) { document.getElementById(id).innerText = val; sync(); }
-    function sync() {
-        fetch('/update_config', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({
-            stop_line: document.getElementById('stop_line').value,
-            conf_threshold: document.getElementById('conf_threshold').value,
-            roi_x: document.getElementById('roi_x').value,
-            roi_w: document.getElementById('roi_w').value,
-            roi_h: 14, roi_y: 0
-        })});
-    }
-    socket.on('update_ui', (data) => {
-        document.getElementById('total-count').innerText = data.stats.Total;
-        document.getElementById('violation-count').innerText = data.stats.Violation;
-        document.getElementById('count-bus').innerText = data.stats.Bus || 0;
-        document.getElementById('count-car').innerText = data.stats.Car || 0;
-        document.getElementById('count-motor').innerText = data.stats.Motorcycle || 0;
-        document.getElementById('count-truck').innerText = data.stats.Truck || 0;
 
-        const lb = document.getElementById('light-box');
-        lb.innerText = "LIGHT: " + data.light_status;
-        lb.style.background = data.light_status === "RED" ? "#ef4444" : (data.light_status === "GREEN" ? "#22c55e" : "#64748b");
+    <script>
+        const socket = io();
         
-        if (data.violation) {
-            const card = `<div class="card mb-3 shadow border-0 overflow-hidden">
-                <img src="/static/evidence/${data.violation.img}" class="w-100">
-                <div class="p-2 small fw-bold bg-danger text-white">BẰNG CHỨNG TOÀN CẢNH: ${data.violation.type}</div>
-            </div>`;
-            document.getElementById('violation-list').insertAdjacentHTML('afterbegin', card);
+        function upd(id, labelId) {
+            document.getElementById(labelId).innerText = document.getElementById(id).value;
+            const data = {
+                stop_line: document.getElementById('stop_line').value,
+                conf_threshold: document.getElementById('conf_threshold').value,
+                roi_x: document.getElementById('roi_x').value,
+                roi_y: document.getElementById('roi_y').value,
+                roi_w: document.getElementById('roi_w').value,
+                roi_h: document.getElementById('roi_h').value
+            };
+            fetch('/update_config', {
+                method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(data)
+            });
         }
-    });
-</script>
+
+        function resetData() {
+            if(confirm("Reset counters?")) {
+                fetch('/reset_stats', {method: 'POST'}).then(() => {
+                    ['s_total', 's_vio', 's_car', 's_moto', 's_bus', 's_truck'].forEach(id => document.getElementById(id).innerText = 0);
+                });
+            }
+        }
+
+        socket.on('update_ui', (data) => {
+            // Cập nhật số liệu 4 loại xe
+            document.getElementById('s_total').innerText = data.stats.Total;
+            document.getElementById('s_vio').innerText = data.stats.Violation;
+            document.getElementById('s_car').innerText = data.stats.Car;
+            document.getElementById('s_moto').innerText = data.stats.Motorcycle;
+            document.getElementById('s_bus').innerText = data.stats.Bus;
+            document.getElementById('s_truck').innerText = data.stats.Truck;
+
+            document.getElementById('l-red').className = `light red ${data.light_status === 'RED' ? 'active' : ''}`;
+            document.getElementById('l-green').className = `light green ${data.light_status === 'GREEN' ? 'active' : ''}`;
+
+            if(data.violation) {
+                const el = document.getElementById('alert');
+                el.style.display = 'block';
+                setTimeout(() => el.style.display = 'none', 2000);
+            }
+        });
+    </script>
 </body>
 </html>

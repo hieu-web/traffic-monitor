@@ -2,30 +2,36 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Violation Records</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <title>History</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
-<body class="bg-light p-5">
-    <div class="container bg-white p-5 shadow rounded">
-        <div class="d-flex justify-content-between mb-4">
-            <h2 class="fw-bold">📜 Traffic Violation History</h2>
-            <a href="/" class="btn btn-primary btn-sm">🏠 Back to Dashboard</a>
+<body class="container py-4 bg-light">
+    <div class="d-flex justify-content-between mb-4">
+        <h3>Violation Log</h3>
+        <a href="/" class="btn btn-secondary">Back</a>
+    </div>
+    <div class="card shadow">
+        <div class="card-body p-0">
+            <table class="table table-striped mb-0">
+                <thead class="table-dark">
+                    <tr><th>ID</th><th>Time</th><th>Type</th><th>Image</th></tr>
+                </thead>
+                <tbody id="log-body"></tbody>
+            </table>
         </div>
-        <table class="table table-hover mt-3 align-middle">
-            <thead class="table-dark"><tr><th>ID</th><th>Vehicle</th><th>Timestamp</th><th>Evidence</th></tr></thead>
-            <tbody id="historyBody"></tbody>
-        </table>
     </div>
     <script>
-        fetch('/api/history').then(res => res.json()).then(data => {
-            document.getElementById('historyBody').innerHTML = data.map(row => `
-                <tr>
-                    <td>#${row.id}</td>
-                    <td><span class="badge bg-danger px-3 py-2">${row.vehicle_type}</span></td>
-                    <td class="text-muted">${row.time}</td>
-                    <td><img src="/${row.image_path}" class="rounded shadow-sm" style="width:130px;"></td>
-                </tr>
-            `).join('');
+        fetch('/api/history').then(r => r.json()).then(data => {
+            const body = document.getElementById('log-body');
+            data.forEach(d => {
+                body.innerHTML += `
+                    <tr>
+                        <td>${d.id}</td>
+                        <td>${d.time}</td>
+                        <td>${d.vehicle_type}</td>
+                        <td><a href="${d.image_path}" target="_blank"><img src="${d.image_path}" height="50"></a></td>
+                    </tr>`;
+            });
         });
     </script>
 </body>
