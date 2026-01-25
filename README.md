@@ -111,6 +111,9 @@ traffic-monitor/
 ├── docker-compose.yml  # Orchestration for running the containerized app
 ├── requirements.txt    # List of required Python libraries
 └── .gitignore.txt      # Specifies files for Git to ignore
-## 🎥 Demo Video
+## 🎥 Demo
 
-▶️ [Watch demo video](demo.mp4)
+
+
+▶️ Full demo video:  
+https://github.com/hieu-web/traffic-monitor/blob/main/demo/demo.mp4
