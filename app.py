@@ -14,12 +14,19 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 core = TrafficCore()
 
-# Config mặc định
+# --- CẤU HÌNH CHUẨN (Đã sửa lại 0.45) ---
 config = {
     "stop_line": 70, 
-    "conf_threshold": 0.45, 
-    "roi_x": 85, "roi_y": 10, "roi_w": 8, "roi_h": 15
+    
+    # ĐỘ TIN CẬY 0.45: Bắt xe nhạy hơn, không bỏ sót xe lề đường
+    "conf_threshold": 0.45,      
+    
+    "roi_x": 93, "roi_y": 0, "roi_w": 4, "roi_h": 15,
+    "lane_x_min": 0,            # Lane Left = 0%
+    "lane_x_max": 90,           # Lane Right = 90%
+    "lane_y_min": 36            # Horizon = 36%
 }
+
 current_video = "test.mp4"
 
 @app.route('/')
