@@ -1,32 +1,108 @@
-# 🚦 AI Traffic Monitor – Red Light Violation Detection System
+# 🚦 AI Traffic Violation Monitor System
 
 ![YOLOv8](https://img.shields.io/badge/YOLO-v8-yellow.svg)
+![Flask](https://img.shields.io/badge/Flask-Web%20App-lightgrey.svg)
 ![Docker](https://img.shields.io/badge/Docker-Supported-blue.svg)
 
-**AI Traffic Monitor** is an intelligent traffic surveillance system that uses Computer Vision to automatically detect and record evidence of vehicles running red lights.  
-The system is optimized to reduce false positives and ensure stable, reliable detection.
+AI Traffic Violation Monitor System is a real-time computer vision application for detecting **red light violations** from traffic videos. The system provides an interactive dashboard that allows users to tune detection parameters and observe results instantly.
 
 ---
 
-## 🚀 Key Features
+## 🖥️ System Interface
 
-* **🎯 Accurate Detection:** Uses the **YOLOv8** model to classify vehicles such as motorcycles, cars, buses, and trucks.
-* **🚦 Red Light Violation Logic:** The system reports a violation when a vehicle crosses the stop line while the traffic light is red.
-* **⚖️ Stable Traffic Light State:** A buffering algorithm (15 frames) is used to prevent traffic light state flickering (green/red) caused by lighting noise.
-* **📸 Full-Scene Evidence:** Automatically captures and stores violation images including the violating vehicle, stop line, and red light state at that moment.
-* **🎛️ Control Dashboard:** A web-based interface allows real-time adjustment of the stop line position and traffic light detection region (ROI).
-* **🐳 Docker Support:** Easy deployment on any machine using a single command.
+![Dashboard Screenshot](demo/demo.png)
+
+The dashboard includes:
+
+* **Left panel:** Detection and configuration controls
+* **Center:** Processed video stream
+* **Right panel:** Real-time traffic statistics
 
 ---
 
-## 🛠️ Technologies Used
+## 🚀 Main Features
 
-* **Core AI:** Ultralytics YOLOv8
-* **Image Processing:** OpenCV (cv2)
-* **Backend:** Flask, Flask-SocketIO
-* **Frontend:** HTML5, Bootstrap 5, Socket.IO
-* **Database:** SQLite
-* **Containerization:** Docker & Docker Compose
+### 🎯 Vehicle Detection
+
+* YOLOv8-based detection
+* Supported vehicle classes:
+
+  * Car
+  * Motorbike
+  * Bus
+  * Truck
+
+### 🚦 Red Light Violation Detection
+
+A violation is recorded when:
+
+* The traffic light state is **RED**
+* A detected vehicle crosses the **Stop Line**
+
+### 🧠 Traffic Light State Stabilization
+
+* Uses a frame buffer to stabilize red/green state
+* Reduces false detection caused by lighting noise
+
+### 📸 Violation Evidence Capture
+
+* Automatically saves frames when violations occur
+* Evidence includes vehicle position, stop line, and traffic light state
+
+### 📊 Real-Time Statistics
+
+
+* Total violations
+* Vehicle violated count by type
+
+---
+
+## 🎛️ Dashboard Controls
+
+### Stop Line (%)
+
+* Adjusts the vertical position of the stop line
+* Typical range: **70–80%**
+
+### AI Confidence
+
+* Minimum confidence threshold for YOLO detections
+
+### Traffic Light ROI (%)
+
+Defines the region for traffic light detection:
+
+* ROI X
+* ROI Y
+* ROI Width
+* ROI Height
+
+### 🛣️ Road Limits Configuration
+
+Limits the valid road area to reduce false detections outside lanes.
+
+* **Horizon Limit (Top):** Upper boundary of the road area. Vehicles above this line are ignored.
+* **Lane Left (%):** Left boundary of the valid road region.
+* **Lane Right (%):** Right boundary of the valid road region.
+* **AI Confidence:** Minimum confidence score required for a detection to be considered valid.
+
+### Video Upload
+
+* Upload `.mp4` traffic videos
+* Statistics reset automatically for each new video
+
+---
+
+## 🛠️ Technology Stack
+
+| Component        | Technology             |
+| ---------------- | ---------------------- |
+| Object Detection | YOLOv8 (Ultralytics)   |
+| Video Processing | OpenCV                 |
+| Backend          | Flask, Flask-SocketIO  |
+| Frontend         | HTML, CSS, Bootstrap   |
+| Database         | SQLite                 |
+| Deployment       | Docker, Docker Compose |
 
 ---
 
@@ -34,86 +110,69 @@ The system is optimized to reduce false positives and ensure stable, reliable de
 
 ### Method 1: Docker (Recommended)
 
-1.  **Download the source code:**
-    ```bash
-    git clone [https://github.com/hieu-web/traffic-monitor.git](https://github.com/hieu-web/traffic-monitor.git)
-    cd traffic-monitor
-    ```
-2.  **Run the application:**
-    ```bash
-    docker-compose up --build
-    ```
-3.  **Access the system:**
-    Open your browser and go to `http://localhost:5000`
+```bash
+git clone https://github.com/hieu-web/traffic-monitor.git
+cd traffic-monitor
+docker-compose up --build
+```
 
-### Method 2: Local Installation
+Open in browser:
 
-1.  **Install dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
-2.  **Run the application:**
-    ```bash
-    python app.py
-    ```
-3.  **Access the system:**
-    Open your browser and go to `http://localhost:5000`
+```
+http://localhost:5000
+```
 
 ---
 
-## 📖 Dashboard User Guide
+### Method 2: Local Installation
 
-### 1. Upload Video
-Click **Choose Video** to upload a traffic video for analysis.
+```bash
+pip install -r requirements.txt
+python app.py
+```
 
-### 2. Adjust Stop Line
-Use the **Stop Line (%)** slider to position the detection boundary.
-* **Recommended value:** 70–80%
+Open in browser:
 
-### 3. Adjust Traffic Light ROI
-Use **ROI X** and **ROI Width** sliders to define the traffic light area.
-* **Tip:** Keep the ROI tight around the traffic light bulb for best accuracy.
-
-
-
-### 4. View Results
-* **Green Box:** Vehicle is compliant.
-* **Red Box:** Red light violation (evidence image is automatically saved to the system).
-
-| Visual Indicator | Meaning | System Action |
-| :--- | :--- | :--- |
-| **Green Box** | Compliant | No violation detected. |
-| **Red Box** | **Violation** | Red light violation detected; evidence image saved. |
-
+```
+http://localhost:5000
+```
 
 ---
 
 ## 📂 Project Structure
 
-
-
 ```text
 traffic-monitor/
-├── models/             # Contains AI model files
-│   └── best.pt         # YOLOv8 trained weights for vehicle/light detection
-├── static/             # Frontend assets and storage
-│   ├── evidence/       # Automatically saved images of red light violations
-│   ├── uploads/        # Directory for uploaded traffic videos
-│   ├── charts.js       # Logic for data visualization
-│   └── style.css       # Main stylesheet for the dashboard
-├── templates/          # HTML UI components
-│   ├── index.html      # Main monitoring dashboard
-│   └── history.html    # Page to view past violation records
-├── app.py              # Main Flask backend and WebSocket server
-├── traffic_core.py     # Core AI processing and violation logic
-├── traffic.db          # SQLite database for storing violation logs
-├── Dockerfile          # Instructions for building the Docker image
-├── docker-compose.yml  # Orchestration for running the containerized app
-├── requirements.txt    # List of required Python libraries
-└── .gitignore.txt      # Specifies files for Git to ignore
+├── models/              # YOLOv8 weights
+├── static/
+│   ├── uploads/         # Uploaded videos
+│   ├── evidence/        # Violation images
+│   └── style.css
+├── templates/
+│   ├── index.html       # Main dashboard
+│   └── history.html    # Violation history
+├── app.py               # Flask backend
+├── traffic_core.py      # Detection logic
+├── traffic.db           # SQLite database
+├── Dockerfile
+├── docker-compose.yml
+├── requirements.txt
+└── README.md
+```
+
+---
+
 ## 🎥 Demo
 
+▶️ Demo video:
 
+```
+demo/demo.mp4
+```
 
-▶️ Full demo video:  
-https://github.com/hieu-web/traffic-monitor/blob/main/demo/demo.mp4
+---
+
+## 📌 Notes
+
+* For educational and research purposes
+* Easily extendable with license plate recognition and multi-camera support
