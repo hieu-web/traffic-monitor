@@ -7,15 +7,17 @@ from datetime import datetime
 
 class TrafficCore:
     def __init__(self):
-        # Load model YOLO
+        # Load Model
         self.model = YOLO("models/best.pt")
         self.class_names = self.model.names
+        self.traffic_direction = "UP"  # Hướng xe từ dưới lên
         
-        
-        self.traffic_direction = "UP"  
+        # Màu sắc (BGR)
         self.vehicle_colors = {
-            "Car": (0, 255, 0), "Motorcycle": (255, 255, 0),
-            "Bus": (0, 255, 255), "Truck": (255, 0, 255)
+            "Car": (0, 255, 0),          # Xanh lá
+            "Motorcycle": (255, 255, 0), # Xanh lơ
+            "Bus": (0, 255, 255),        # Vàng
+            "Truck": (255, 0, 255)       # Tím
         }
         self.last_light_status = "UNKNOWN"
         self.light_buffer = [] 
@@ -40,9 +42,9 @@ class TrafficCore:
     def map_label(self, raw_label):
         raw = raw_label.lower()
         if raw in ['car', 'taxi', 'suv', 'jeep', 'o to', 'ô tô']: return "Car"
-        if raw in ['motorcycle', 'motorbike', 'moto', 'xe may', 'xe máy']: return "Motorcycle"
+        if raw in ['motorcycle', 'motorbike', 'moto', 'xe may', 'xe máy', 'scooter']: return "Motorcycle"
         if raw in ['bus', 'autobus', 'xe buyt']: return "Bus"
-        if raw in ['truck', 'lorry', 'van', 'xe tai']: return "Truck"
+        if raw in ['truck', 'lorry', 'van', 'xe tai', 'container']: return "Truck"
         return None
 
     def get_light_color(self, roi_img):
@@ -50,19 +52,16 @@ class TrafficCore:
         roi_blur = cv2.GaussianBlur(roi_img, (5, 5), 0)
         hsv = cv2.cvtColor(roi_blur, cv2.COLOR_BGR2HSV)
         
-        
         mask_r = cv2.addWeighted(
             cv2.inRange(hsv, np.array([0, 100, 100]), np.array([10, 255, 255])), 1.0,
             cv2.inRange(hsv, np.array([170, 100, 100]), np.array([180, 255, 255])), 1.0, 0
         )
-        
         mask_g = cv2.inRange(hsv, np.array([40, 120, 120]), np.array([90, 255, 255]))
         
         r_pix, g_pix = cv2.countNonZero(mask_r), cv2.countNonZero(mask_g)
         
         current = "OFF"
         threshold = 20
-        
         if r_pix > threshold: current = "RED"
         elif g_pix > threshold + 10: current = "GREEN"
             
@@ -76,11 +75,21 @@ class TrafficCore:
         raw_evidence = frame.copy() 
         H, W = frame.shape[:2]
         
+        # --- CẤU HÌNH ---
         stop_line_y = int(H * float(cfg['stop_line']) / 100)
+        
+        l_min_pct = float(cfg.get('lane_x_min', 0))
+        l_max_pct = float(cfg.get('lane_x_max', 100))
+        l_top_pct = float(cfg.get('lane_y_min', 36))
+        
+        lane_x_min = int(W * l_min_pct / 100)
+        lane_x_max = int(W * l_max_pct / 100)
+        lane_y_min = int(H * l_top_pct / 100)
+        
         rx, ry = int(W * float(cfg['roi_x']) / 100), int(H * float(cfg['roi_y']) / 100)
         rw, rh = int(W * float(cfg['roi_w']) / 100), int(H * float(cfg['roi_h']) / 100)
 
-        
+        # 1. Xử lý Đèn
         rx, ry = max(0, rx), max(0, ry)
         rw, rh = min(W-rx, rw), min(H-ry, rh)
         if rw > 0 and rh > 0:
@@ -89,10 +98,24 @@ class TrafficCore:
             color_roi = (0, 0, 255) if self.last_light_status == "RED" else ((0, 255, 0) if self.last_light_status == "GREEN" else (0, 255, 255))
             cv2.rectangle(frame, (rx, ry), (rx+rw, ry+rh), color_roi, 2)
 
-      
-        cv2.line(frame, (0, stop_line_y), (W, stop_line_y), (0, 0, 255) if self.last_light_status == "RED" else (0, 255, 0), 3)
+        # --- VẼ GIAO DIỆN (RÕ RÀNG HƠN) ---
+        line_color = (0, 0, 255) if self.last_light_status == "RED" else (0, 255, 0)
+        
+        # Vạch dừng TOÀN BỘ MÀN HÌNH (Màu nhạt - Biểu thị vùng ĐẾM XE)
+        cv2.line(frame, (0, stop_line_y), (W, stop_line_y), (200, 200, 200), 2)
+        
+        # Vạch dừng VÙNG PHẠT (Màu đậm - Biểu thị vùng XỬ PHẠT)
+        cv2.line(frame, (lane_x_min, stop_line_y), (lane_x_max, stop_line_y), line_color, 4)
+        
+        # Đường chân trời (Horizon) - Xe trên vạch này sẽ bị bỏ qua
+        cv2.line(frame, (0, lane_y_min), (W, lane_y_min), (0, 0, 0), 2) 
+        
+        # Hai đường giới hạn làn
+        cv2.line(frame, (lane_x_min, lane_y_min), (lane_x_min, H), (150, 150, 150), 1)
+        cv2.line(frame, (lane_x_max, lane_y_min), (lane_x_max, H), (150, 150, 150), 1)
 
-        #  Tracking
+        # 2. Tracking
+        # Confidence lấy từ config
         results = self.model.track(frame, persist=True, conf=float(cfg['conf_threshold']), verbose=False)
         new_violation = None
 
@@ -103,42 +126,53 @@ class TrafficCore:
 
             for box, cls, tid in zip(boxes, clss, ids):
                 x1, y1, x2, y2 = map(int, box)
+                center_y = int((y1 + y2) / 2)
+                
+                # --- LỌC DUY NHẤT: XE Ở ĐƯỜNG TRÊN CAO (Horizon) ---
+                # Chỉ bỏ qua xe ở tít đường trên cao, còn xe ở lề đường VẪN GIỮ LẠI
+                if center_y < lane_y_min: 
+                    # Vẽ màu xám để biết AI có nhìn thấy nhưng bỏ qua
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (100, 100, 100), 1)
+                    continue 
+
                 label = self.map_label(self.class_names[cls])
                 if label is None: continue 
                 veh_color = self.vehicle_colors.get(label, (200, 200, 200))
-                center_y = int((y1 + y2) / 2)
 
-                
+                # --- KIỂM TRA: XE CÓ NẰM TRONG "LÀN GIỮA" KHÔNG? ---
+                center_x = int((x1 + x2) / 2)
+                is_in_enforcement_zone = True
+                if center_x < lane_x_min or center_x > lane_x_max:
+                    is_in_enforcement_zone = False # Xe ở lề đường -> False
+
+                # --- 1. LOGIC ĐẾM XE (ÁP DỤNG CHO TẤT CẢ XE) ---
                 has_crossed = False
-                is_violation = False
                 
+                # Bất cứ xe nào đi từ dưới lên và qua vạch -> ĐỀU ĐƯỢC ĐẾM
+                # Không quan tâm is_in_enforcement_zone ở đây!
+                if self.traffic_direction == "UP" and center_y < stop_line_y:
+                    has_crossed = True
                 
-                buffer_zone = 20 
-
-                if self.traffic_direction == "UP":
-                    
-                    if center_y < stop_line_y: has_crossed = True
-                    
-                    if self.last_light_status == "RED" and y2 < (stop_line_y - buffer_zone): 
-                        is_violation = True
-                        
-                else:
-                    
-                    if center_y > stop_line_y: has_crossed = True
-                    
-                    if self.last_light_status == "RED" and y1 > (stop_line_y + buffer_zone): 
-                        is_violation = True
-
                 if has_crossed:
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), veh_color, 2)
+                    # Nếu xe chưa được đếm -> Cộng điểm
                     if tid not in self.counted_ids:
                         self.counted_ids.add(tid)
                         self.stats["Total"] += 1
                         self.stats[label] += 1
-                else:
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 255), 1)
+                        print(f"Đã đếm: {label} ID:{tid}") # Log kiểm tra
 
+                # --- 2. LOGIC BẮT PHẠT (CHỈ XE TRONG LÀN GIỮA) ---
+                is_violation = False
+                buffer_zone = 20 
+
+                # Chỉ phạt khi: Trong làn + Đèn đỏ + Đuôi xe đã qua vạch
+                if is_in_enforcement_zone and self.last_light_status == "RED":
+                    if self.traffic_direction == "UP" and y2 < (stop_line_y - buffer_zone): 
+                        is_violation = True
+                
+                # --- VẼ HÌNH HIỂN THỊ ---
                 if is_violation:
+                    # VI PHẠM: Khung Đỏ
                     cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 3)
                     if tid not in self.violated_ids:
                         self.violated_ids.add(tid)
@@ -147,12 +181,23 @@ class TrafficCore:
                         img_name = f"v_{tid}_{datetime.now().strftime('%H%M%S')}.jpg"
                         cv2.putText(raw_evidence, f"VIOLATION: {label}", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
                         cv2.rectangle(raw_evidence, (x1, y1), (x2, y2), (0, 0, 255), 3)
+                        cv2.line(raw_evidence, (lane_x_min, stop_line_y), (lane_x_max, stop_line_y), (0, 0, 255), 5)
                         cv2.imwrite(f"static/evidence/{img_name}", raw_evidence)
                         with sqlite3.connect('traffic.db') as conn:
                             conn.execute("INSERT INTO violations (vehicle_type, plate, time, image_path) VALUES (?,?,?,?)",
                                          (label, "Checking", datetime.now().strftime("%Y-%m-%d %H:%M:%S"), f"static/evidence/{img_name}"))
                         new_violation = {"type": label}
+                
+                elif has_crossed:
+                    # ĐÃ ĐẾM (AN TOÀN): Vẽ màu theo loại xe
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), veh_color, 2)
+                else:
+                    # CHƯA QUA VẠCH: Màu vàng chờ
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 255), 1)
 
-                cv2.putText(frame, f"{label}", (x1, y1-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, veh_color, 2)
+                # Hiển thị tên
+                info = f"{label}"
+                if not is_in_enforcement_zone: info += " (Out)" # Đánh dấu xe ngoài làn
+                cv2.putText(frame, info, (x1, y1-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, veh_color, 2)
 
         return frame, new_violation
