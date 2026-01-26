@@ -14,11 +14,11 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 core = TrafficCore()
 
-# --- CẤU HÌNH CHUẨN (Đã sửa lại 0.45) ---
+
 config = {
     "stop_line": 70, 
     
-    # ĐỘ TIN CẬY 0.45: Bắt xe nhạy hơn, không bỏ sót xe lề đường
+
     "conf_threshold": 0.45,      
     
     "roi_x": 93, "roi_y": 0, "roi_w": 4, "roi_h": 15,
