@@ -10,8 +10,12 @@ AI Traffic Violation Monitor System is a real-time computer vision application f
 
 ## 🖥️ System Interface
 
-![Dashboard Screenshot](demo/demo1.PNG) (demo/demo2.PNG) (demo/gif.gif)
-
+<div align="center">
+  <img src="demo/demo1.PNG" width="48%" alt="Dashboard Screenshot 1">
+  <img src="demo/demo2.PNG" width="48%" alt="Dashboard Screenshot 2">
+  <br><br>
+  <img src="demo/gif.gif" width="100%" alt="System Demo GIF">
+</div>
 The dashboard includes:
 
 * **Left panel:** Detection and configuration controls
@@ -26,7 +30,6 @@ The dashboard includes:
 
 * YOLOv8-based detection
 * Supported vehicle classes:
-
   * Car
   * Motorbike
   * Bus
@@ -50,7 +53,6 @@ A violation is recorded when:
 * Evidence includes vehicle position, stop line, and traffic light state
 
 ### 📊 Real-Time Statistics
-
 
 * Total violations
 * Vehicle violated count by type
@@ -103,6 +105,8 @@ Limits the valid road area to reduce false detections outside lanes.
 | Frontend         | HTML, CSS, Bootstrap   |
 | Database         | SQLite                 |
 | Deployment       | Docker, Docker Compose |
+
+
 
 ---
 
@@ -160,17 +164,6 @@ traffic-monitor/
 └── README.md
 ```
 
----
-
-## 🎥 Demo
-
-▶️ Demo video:
-
-```
-demo/demo.mp4
-```
-
----
 
 ## 📌 Notes
 
