@@ -10,7 +10,7 @@ AI Traffic Violation Monitor System is a real-time computer vision application f
 
 ## 🖥️ System Interface
 
-![Dashboard Screenshot](demo/demo.PNG)
+![Dashboard Screenshot](demo/demo1.PNG) (demo/demo2.PNG) (demo/gif.gif)
 
 The dashboard includes:
 
