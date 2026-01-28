@@ -164,6 +164,9 @@ traffic-monitor/
 └── README.md
 ```
 
+---
+
+
 ## 🏗️ System Architecture
 
 ### High-Level Architecture
@@ -172,25 +175,25 @@ The system follows a modular architecture separating the web interface, backend 
 ```mermaid
 graph TD
     subgraph "Frontend (User Browser)"
-        UI[Web Dashboard]
-        JS[Socket.IO Client]
+        UI["💻 Web Dashboard"]
+        JS["🔌 Socket.IO Client"]
     end
 
     subgraph "Backend (Flask Server)"
-        Flask[Flask Web App]
-        SocketServer[Socket.IO Server]
+        Flask["🌐 Flask Web App"]
+        SocketServer["📡 Socket.IO Server"]
         
         subgraph "AI Processing Core"
-            Core[TrafficCore Controller]
-            YOLO[YOLOv8 Detection]
-            CV[OpenCV Processing]
-            Logic[Business Logic]
+            Core["🧠 TrafficCore Controller"]
+            YOLO["📦 YOLOv8 Detection"]
+            CV["🖼️ OpenCV Processing"]
+            Logic["⚡ Business Logic"]
         end
     end
 
     subgraph "Storage"
-        SQLite[(SQLite DB)]
-        FS[File System]
+        SQLite[("💾 SQLite DB")]
+        FS["📂 File System"]
     end
 
     UI -->|Upload/Config| Flask
@@ -203,7 +206,11 @@ graph TD
     Core -->|Stream Frame| UI
     SocketServer -->|Live Stats| JS
 
-### 🔄 Video Processing Data Flow
+---
+
+
+
+## 🔄 Video Processing Data Flow
 The logic separates "Counting" (all vehicles) from "Violation Detection" (vehicles in the enforcement zone).
 
 ```mermaid
