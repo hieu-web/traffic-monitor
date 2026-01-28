@@ -7,17 +7,17 @@ from datetime import datetime
 
 class TrafficCore:
     def __init__(self):
-        # Load Model
+     
         self.model = YOLO("models/best.pt")
         self.class_names = self.model.names
         self.traffic_direction = "UP"  
         
-        # Màu sắc (BGR)
+       
         self.vehicle_colors = {
-            "Car": (0, 255, 0),          # Xanh lá
-            "Motorcycle": (255, 255, 0), # Xanh lơ
-            "Bus": (0, 255, 255),        # Vàng
-            "Truck": (255, 0, 255)       # Tím
+            "Car": (0, 255, 0),          
+            "Motorcycle": (255, 255, 0), 
+            "Bus": (0, 255, 255),        
+            "Truck": (255, 0, 255)       
         }
         self.last_light_status = "UNKNOWN"
         self.light_buffer = [] 
@@ -89,7 +89,7 @@ class TrafficCore:
         rx, ry = int(W * float(cfg['roi_x']) / 100), int(H * float(cfg['roi_y']) / 100)
         rw, rh = int(W * float(cfg['roi_w']) / 100), int(H * float(cfg['roi_h']) / 100)
 
-        # 1. Xử lý Đèn
+      
         rx, ry = max(0, rx), max(0, ry)
         rw, rh = min(W-rx, rw), min(H-ry, rh)
         if rw > 0 and rh > 0:
@@ -103,19 +103,13 @@ class TrafficCore:
         
         
         cv2.line(frame, (0, stop_line_y), (W, stop_line_y), (200, 200, 200), 2)
-        
-        
         cv2.line(frame, (lane_x_min, stop_line_y), (lane_x_max, stop_line_y), line_color, 4)
-        
         
         cv2.line(frame, (0, lane_y_min), (W, lane_y_min), (0, 0, 0), 2) 
         
-   
         cv2.line(frame, (lane_x_min, lane_y_min), (lane_x_min, H), (150, 150, 150), 1)
         cv2.line(frame, (lane_x_max, lane_y_min), (lane_x_max, H), (150, 150, 150), 1)
 
-        # 2. Tracking
-        
         results = self.model.track(frame, persist=True, conf=float(cfg['conf_threshold']), verbose=False)
         new_violation = None
 
@@ -128,73 +122,76 @@ class TrafficCore:
                 x1, y1, x2, y2 = map(int, box)
                 center_y = int((y1 + y2) / 2)
                 
-           
+               
+                is_far_away = False
                 if center_y < lane_y_min: 
+                    is_far_away = True
+               
                 
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), (100, 100, 100), 1)
-                    continue 
-
                 label = self.map_label(self.class_names[cls])
                 if label is None: continue 
                 veh_color = self.vehicle_colors.get(label, (200, 200, 200))
 
-            
+             
+                if is_far_away:
+                    cv2.rectangle(frame, (x1, y1), (x2, y2), (180, 180, 180), 1)
+                
                 center_x = int((x1 + x2) / 2)
                 is_in_enforcement_zone = True
                 if center_x < lane_x_min or center_x > lane_x_max:
                     is_in_enforcement_zone = False 
 
-            
+           
                 has_crossed = False
-                
-                
+              
                 if self.traffic_direction == "UP" and center_y < stop_line_y:
                     has_crossed = True
                 
                 if has_crossed:
-                 
+                   
                     if tid not in self.counted_ids:
                         self.counted_ids.add(tid)
                         self.stats["Total"] += 1
                         self.stats[label] += 1
                         print(f"Đã đếm: {label} ID:{tid}")
 
-            
-                is_violation = False
-                buffer_zone = 20 
-
-             
-                if is_in_enforcement_zone and self.last_light_status == "RED":
-                    if self.traffic_direction == "UP" and y2 < (stop_line_y - buffer_zone): 
-                        is_violation = True
-                
-                
-                if is_violation:
                    
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 3)
-                    if tid not in self.violated_ids:
-                        self.violated_ids.add(tid)
-                        self.stats["Violation"] += 1
-                        
-                        img_name = f"v_{tid}_{datetime.now().strftime('%H%M%S')}.jpg"
-                        cv2.putText(raw_evidence, f"VIOLATION: {label}", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
-                        cv2.rectangle(raw_evidence, (x1, y1), (x2, y2), (0, 0, 255), 3)
-                        cv2.line(raw_evidence, (lane_x_min, stop_line_y), (lane_x_max, stop_line_y), (0, 0, 255), 5)
-                        cv2.imwrite(f"static/evidence/{img_name}", raw_evidence)
-                        with sqlite3.connect('traffic.db') as conn:
-                            conn.execute("INSERT INTO violations (vehicle_type, plate, time, image_path) VALUES (?,?,?,?)",
-                                         (label, "Checking", datetime.now().strftime("%Y-%m-%d %H:%M:%S"), f"static/evidence/{img_name}"))
-                        new_violation = {"type": label}
+                    is_violation = False
+                    buffer_zone = 20 
+
+                 
+                    if is_in_enforcement_zone and self.last_light_status == "RED" and not is_far_away:
+                        if self.traffic_direction == "UP" and y2 < (stop_line_y - buffer_zone): 
+                            is_violation = True
                 
-                elif has_crossed:
-               
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), veh_color, 2)
+                    if is_violation:
+                     
+                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 3)
+                        if tid not in self.violated_ids:
+                            self.violated_ids.add(tid)
+                            self.stats["Violation"] += 1
+                            
+                            img_name = f"v_{tid}_{datetime.now().strftime('%H%M%S')}.jpg"
+                            cv2.putText(raw_evidence, f"VIOLATION: {label}", (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 3)
+                            cv2.rectangle(raw_evidence, (x1, y1), (x2, y2), (0, 0, 255), 3)
+                            cv2.line(raw_evidence, (lane_x_min, stop_line_y), (lane_x_max, stop_line_y), (0, 0, 255), 5)
+                            cv2.imwrite(f"static/evidence/{img_name}", raw_evidence)
+                            with sqlite3.connect('traffic.db') as conn:
+                                conn.execute("INSERT INTO violations (vehicle_type, plate, time, image_path) VALUES (?,?,?,?)",
+                                             (label, "Checking", datetime.now().strftime("%Y-%m-%d %H:%M:%S"), f"static/evidence/{img_name}"))
+                            new_violation = {"type": label}
+                
+                   
+                    elif not is_far_away:
+                        cv2.rectangle(frame, (x1, y1), (x2, y2), veh_color, 2)
                 else:
                    
                     cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 255), 1)
 
+               
                 info = f"{label}"
-                if not is_in_enforcement_zone: info += " (Out)" 
+                if is_far_away: info += " (Far)" 
+                elif not is_in_enforcement_zone: info += " (Out)" 
                 cv2.putText(frame, info, (x1, y1-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, veh_color, 2)
 
         return frame, new_violation
