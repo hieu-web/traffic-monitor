@@ -164,8 +164,74 @@ traffic-monitor/
 └── README.md
 ```
 
+## 🏗️ System Architecture
 
-## 📌 Notes
+### High-Level Architecture
+The system follows a modular architecture separating the web interface, backend server, and the AI processing core.
 
-* For educational and research purposes
-* Easily extendable with license plate recognition and multi-camera support
+```mermaid
+graph TD
+    subgraph "Frontend (User Browser)"
+        UI[Web Dashboard]
+        JS[Socket.IO Client]
+    end
+
+    subgraph "Backend (Flask Server)"
+        Flask[Flask Web App]
+        SocketServer[Socket.IO Server]
+        
+        subgraph "AI Processing Core"
+            Core[TrafficCore Controller]
+            YOLO[YOLOv8 Detection]
+            CV[OpenCV Processing]
+            Logic[Business Logic]
+        end
+    end
+
+    subgraph "Storage"
+        SQLite[(SQLite DB)]
+        FS[File System]
+    end
+
+    UI -->|Upload/Config| Flask
+    Flask -->|Video Frame| Core
+    Core -->|Detect| YOLO
+    Core -->|Process| CV
+    Core -->|Analyze| Logic
+    Logic -->|Save Violation| SQLite
+    Logic -->|Save Image| FS
+    Core -->|Stream Frame| UI
+    SocketServer -->|Live Stats| JS
+
+### 🔄 Video Processing Data Flow
+The logic separates "Counting" (all vehicles) from "Violation Detection" (vehicles in the enforcement zone).
+
+```mermaid
+sequenceDiagram
+    participant App as 🌐 Flask App
+    participant Core as 🧠 TrafficCore
+    participant Logic as ⚡ Logic Filters
+    participant DB as 💾 Database
+
+    loop 🎞️ Every Frame
+        App->>Core: Process Frame
+        Core->>Core: 1. 🚦 Detect Traffic Light
+        Core->>Core: 2. 📦 YOLOv8 Tracking
+        
+        loop 🚗 Each Vehicle
+            Core->>Logic: 📏 Filter Horizon/Size
+            
+            par 🔢 Counting Logic
+                Logic->>Logic: Check Stop Line Crossing
+                Logic-->>Core: Count All Vehicles
+            and 🚨 Violation Logic
+                Logic->>Logic: Check Enforcement Zone
+                Logic->>Logic: Check Red Light
+                alt 📸 Violation Detected
+                    Logic->>DB: Save Record & Image
+                    Logic-->>Core: Mark Red Box
+                end
+            end
+        end
+        Core-->>App: Return Processed Frame
+    end
