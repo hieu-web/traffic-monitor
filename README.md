@@ -55,7 +55,7 @@ A violation is recorded when:
 ### 📊 Real-Time Statistics
 
 * Total violations
-* Vehicle violated count by type
+* Vehicle classified and counted by type
 
 ---
 
