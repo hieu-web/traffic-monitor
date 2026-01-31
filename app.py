@@ -14,17 +14,13 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 
 core = TrafficCore()
 
-
 config = {
-    "stop_line": 70, 
-    
-
-    "conf_threshold": 0.45,      
-    
+    "stop_line": 70,
+    "conf_threshold": 0.45,
     "roi_x": 93, "roi_y": 0, "roi_w": 4, "roi_h": 15,
-    "lane_x_min": 0,            # Lane Left = 0%
-    "lane_x_max": 90,           # Lane Right = 90%
-    "lane_y_min": 36            # Horizon = 36%
+    "lane_x_min": 0,
+    "lane_x_max": 90,
+    "lane_y_min": 36
 }
 
 current_video = "test.mp4"
