@@ -2,25 +2,24 @@ import cv2
 import sqlite3
 import numpy as np
 import os
+import uuid
 from ultralytics import YOLO
 from datetime import datetime
 
 class TrafficCore:
     def __init__(self):
-     
         self.model = YOLO("models/best.pt")
+        self.plate_model = YOLO("models/yolov8n-plate.pt")
         self.class_names = self.model.names
-        self.traffic_direction = "UP"  
-        
-       
+        self.traffic_direction = "UP"
         self.vehicle_colors = {
-            "Car": (0, 255, 0),          
-            "Motorcycle": (255, 255, 0), 
-            "Bus": (0, 255, 255),        
-            "Truck": (255, 0, 255)       
+            "Car": (0, 255, 0),
+            "Motorcycle": (255, 255, 0),
+            "Bus": (0, 255, 255),
+            "Truck": (255, 0, 255)
         }
         self.last_light_status = "UNKNOWN"
-        self.light_buffer = [] 
+        self.light_buffer = []
         os.makedirs("static/evidence", exist_ok=True)
         self.init_db()
         self.reset_session()
@@ -30,9 +29,13 @@ class TrafficCore:
             conn.execute('''
                 CREATE TABLE IF NOT EXISTS violations (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    vehicle_type TEXT, plate TEXT, time TEXT, image_path TEXT
+                    vehicle_type TEXT, plate TEXT, time TEXT, image_path TEXT, plate_image_path TEXT
                 )
             ''')
+            try:
+                conn.execute("ALTER TABLE violations ADD COLUMN plate_image_path TEXT")
+            except sqlite3.OperationalError:
+                pass
 
     def reset_session(self):
         self.stats = {"Total": 0, "Violation": 0, "Bus": 0, "Car": 0, "Motorcycle": 0, "Truck": 0}
@@ -71,13 +74,27 @@ class TrafficCore:
             
         return max(set(self.light_buffer), key=self.light_buffer.count) if self.light_buffer else "OFF"
 
+    def detect_plate_zoom(self, car_roi):
+        if car_roi is None or car_roi.size == 0: return None
+        results = self.plate_model(car_roi, verbose=False)
+        for box in results[0].boxes:
+            x1, y1, x2, y2 = map(int, box.xyxy[0])
+            plate_img = car_roi[y1:y2, x1:x2]
+            if plate_img.size == 0: continue
+            
+            plate_zoomed = cv2.resize(plate_img, None, fx=3, fy=3, interpolation=cv2.INTER_CUBIC)
+            
+            filename = f"plate_{uuid.uuid4().hex[:8]}.jpg"
+            save_path = f"static/evidence/{filename}"
+            cv2.imwrite(save_path, plate_zoomed)
+            return save_path
+        return None
+
     def process_frame(self, frame, cfg):
         raw_evidence = frame.copy() 
         H, W = frame.shape[:2]
         
-        # --- CẤU HÌNH ---
         stop_line_y = int(H * float(cfg['stop_line']) / 100)
-        
         l_min_pct = float(cfg.get('lane_x_min', 0))
         l_max_pct = float(cfg.get('lane_x_max', 100))
         l_top_pct = float(cfg.get('lane_y_min', 36))
@@ -89,7 +106,6 @@ class TrafficCore:
         rx, ry = int(W * float(cfg['roi_x']) / 100), int(H * float(cfg['roi_y']) / 100)
         rw, rh = int(W * float(cfg['roi_w']) / 100), int(H * float(cfg['roi_h']) / 100)
 
-      
         rx, ry = max(0, rx), max(0, ry)
         rw, rh = min(W-rx, rw), min(H-ry, rh)
         if rw > 0 and rh > 0:
@@ -98,15 +114,11 @@ class TrafficCore:
             color_roi = (0, 0, 255) if self.last_light_status == "RED" else ((0, 255, 0) if self.last_light_status == "GREEN" else (0, 255, 255))
             cv2.rectangle(frame, (rx, ry), (rx+rw, ry+rh), color_roi, 2)
 
-        
         line_color = (0, 0, 255) if self.last_light_status == "RED" else (0, 255, 0)
-        
         
         cv2.line(frame, (0, stop_line_y), (W, stop_line_y), (200, 200, 200), 2)
         cv2.line(frame, (lane_x_min, stop_line_y), (lane_x_max, stop_line_y), line_color, 4)
-        
         cv2.line(frame, (0, lane_y_min), (W, lane_y_min), (0, 0, 0), 2) 
-        
         cv2.line(frame, (lane_x_min, lane_y_min), (lane_x_min, H), (150, 150, 150), 1)
         cv2.line(frame, (lane_x_max, lane_y_min), (lane_x_max, H), (150, 150, 150), 1)
 
@@ -122,17 +134,14 @@ class TrafficCore:
                 x1, y1, x2, y2 = map(int, box)
                 center_y = int((y1 + y2) / 2)
                 
-               
                 is_far_away = False
                 if center_y < lane_y_min: 
                     is_far_away = True
-               
                 
                 label = self.map_label(self.class_names[cls])
                 if label is None: continue 
                 veh_color = self.vehicle_colors.get(label, (200, 200, 200))
 
-             
                 if is_far_away:
                     cv2.rectangle(frame, (x1, y1), (x2, y2), (180, 180, 180), 1)
                 
@@ -141,31 +150,25 @@ class TrafficCore:
                 if center_x < lane_x_min or center_x > lane_x_max:
                     is_in_enforcement_zone = False 
 
-           
                 has_crossed = False
-              
                 if self.traffic_direction == "UP" and center_y < stop_line_y:
                     has_crossed = True
                 
                 if has_crossed:
-                   
                     if tid not in self.counted_ids:
                         self.counted_ids.add(tid)
                         self.stats["Total"] += 1
                         self.stats[label] += 1
                         print(f"Đã đếm: {label} ID:{tid}")
 
-                   
                     is_violation = False
                     buffer_zone = 20 
 
-                 
                     if is_in_enforcement_zone and self.last_light_status == "RED" and not is_far_away:
                         if self.traffic_direction == "UP" and y2 < (stop_line_y - buffer_zone): 
                             is_violation = True
                 
                     if is_violation:
-                     
                         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 3)
                         if tid not in self.violated_ids:
                             self.violated_ids.add(tid)
@@ -176,19 +179,20 @@ class TrafficCore:
                             cv2.rectangle(raw_evidence, (x1, y1), (x2, y2), (0, 0, 255), 3)
                             cv2.line(raw_evidence, (lane_x_min, stop_line_y), (lane_x_max, stop_line_y), (0, 0, 255), 5)
                             cv2.imwrite(f"static/evidence/{img_name}", raw_evidence)
+                            
+                            car_roi = frame[y1:y2, x1:x2]
+                            plate_path = self.detect_plate_zoom(car_roi)
+
                             with sqlite3.connect('traffic.db') as conn:
-                                conn.execute("INSERT INTO violations (vehicle_type, plate, time, image_path) VALUES (?,?,?,?)",
-                                             (label, "Checking", datetime.now().strftime("%Y-%m-%d %H:%M:%S"), f"static/evidence/{img_name}"))
-                            new_violation = {"type": label}
+                                conn.execute("INSERT INTO violations (vehicle_type, plate, time, image_path, plate_image_path) VALUES (?,?,?,?,?)",
+                                             (label, "Checking", datetime.now().strftime("%Y-%m-%d %H:%M:%S"), f"static/evidence/{img_name}", plate_path))
+                            new_violation = {"type": label, "plate_image": plate_path}
                 
-                   
                     elif not is_far_away:
                         cv2.rectangle(frame, (x1, y1), (x2, y2), veh_color, 2)
                 else:
-                   
                     cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 255), 1)
 
-               
                 info = f"{label}"
                 if is_far_away: info += " (Far)" 
                 elif not is_in_enforcement_zone: info += " (Out)" 
