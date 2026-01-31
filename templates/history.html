@@ -12,9 +12,15 @@
     </div>
     <div class="card shadow">
         <div class="card-body p-0">
-            <table class="table table-striped mb-0">
+            <table class="table table-striped mb-0 align-middle">
                 <thead class="table-dark">
-                    <tr><th>ID</th><th>Time</th><th>Type</th><th>Image</th></tr>
+                    <tr>
+                        <th>ID</th>
+                        <th>Time</th>
+                        <th>Type</th>
+                        <th>Evidence</th>
+                        <th>Plate Zoom</th>
+                    </tr>
                 </thead>
                 <tbody id="log-body"></tbody>
             </table>
@@ -24,12 +30,23 @@
         fetch('/api/history').then(r => r.json()).then(data => {
             const body = document.getElementById('log-body');
             data.forEach(d => {
+                const plateContent = d.plate_image_path 
+                    ? `<a href="${d.plate_image_path}" target="_blank">
+                         <img src="${d.plate_image_path}" height="60" style="border: 2px solid #dc3545; border-radius: 4px;">
+                       </a>` 
+                    : '<span class="text-muted small">N/A</span>';
+
                 body.innerHTML += `
                     <tr>
                         <td>${d.id}</td>
                         <td>${d.time}</td>
-                        <td>${d.vehicle_type}</td>
-                        <td><a href="${d.image_path}" target="_blank"><img src="${d.image_path}" height="50"></a></td>
+                        <td><span class="badge bg-primary">${d.vehicle_type}</span></td>
+                        <td>
+                            <a href="${d.image_path}" target="_blank">
+                                <img src="${d.image_path}" height="60" class="rounded border">
+                            </a>
+                        </td>
+                        <td>${plateContent}</td>
                     </tr>`;
             });
         });

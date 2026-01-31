@@ -26,6 +26,29 @@
         .btn-reset { width: 100%; border: 1px solid #ccc; background: white; padding: 8px; border-radius: 5px; color: #333; font-weight: 600; }
         .btn-reset:hover { border-color: var(--primary-red); color: var(--primary-red); background: #fff0f0; }
         .page-title { font-weight: 800; color: #2c3e50; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; border-bottom: 3px solid var(--primary-red); display: inline-block; padding-bottom: 5px; }
+        
+        
+        .plate-zoom-box {
+            display: none; 
+            background: #fff;
+            border: 2px solid var(--primary-red);
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            animation: pulse-red 2s infinite;
+        }
+        .plate-zoom-box img {
+            max-width: 100%;
+            height: 80px;
+            object-fit: contain;
+            border-radius: 5px;
+        }
+        @keyframes pulse-red {
+            0% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 77, 77, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 77, 77, 0); }
+        }
     </style>
 </head>
 <body class="container-fluid">
@@ -95,6 +118,13 @@
                         <div id="l-red" class="light red"></div>
                         <div id="l-green" class="light green"></div>
                     </div>
+
+                    <div id="plate-container" class="plate-zoom-box">
+                        <h6 class="text-danger fw-bold mb-2">LAST VIOLATION</h6>
+                        <img id="plate-zoom-img" src="" alt="Zoom Plate">
+                        <div id="plate-info" class="mt-1 badge bg-secondary">Checking...</div>
+                    </div>
+
                     <div class="stat-card">
                         <div class="stat-num text-danger" id="s_vio">0</div>
                         <div class="stat-label">Violations</div>
@@ -139,11 +169,14 @@
             if(confirm("Reset counters?")) {
                 fetch('/reset_stats', {method: 'POST'}).then(() => {
                     ['s_total', 's_vio', 's_car', 's_moto', 's_bus', 's_truck'].forEach(id => document.getElementById(id).innerText = 0);
+                    
+                    document.getElementById('plate-container').style.display = 'none';
                 });
             }
         }
 
         socket.on('update_ui', (data) => {
+         
             document.getElementById('s_total').innerText = data.stats.Total;
             document.getElementById('s_vio').innerText = data.stats.Violation;
             document.getElementById('s_car').innerText = data.stats.Car;
@@ -151,13 +184,30 @@
             document.getElementById('s_bus').innerText = data.stats.Bus;
             document.getElementById('s_truck').innerText = data.stats.Truck;
 
+            // Update Lights
             document.getElementById('l-red').className = `light red ${data.light_status === 'RED' ? 'active' : ''}`;
             document.getElementById('l-green').className = `light green ${data.light_status === 'GREEN' ? 'active' : ''}`;
 
+            // Handle Violation Alert
             if(data.violation) {
+                
                 const el = document.getElementById('alert');
                 el.style.display = 'block';
                 setTimeout(() => el.style.display = 'none', 2000);
+
+           
+                if (data.violation.plate_image) {
+                    const plateBox = document.getElementById('plate-container');
+                    const plateImg = document.getElementById('plate-zoom-img');
+                    const plateInfo = document.getElementById('plate-info');
+
+               
+                    plateImg.src = data.violation.plate_image;
+                    plateInfo.innerText = data.violation.type;
+
+                    
+                    plateBox.style.display = 'block';
+                }
             }
         });
     </script>
