@@ -1,19 +1,28 @@
-# Bỏ qua file biên dịch Python
+# --- PYTHON ---
 __pycache__/
 *.pyc
 
-# Bỏ qua cơ sở dữ liệu 
+# --- YOLOv8 (Quan trọng) ---
+# Thư mục này do YOLO tự sinh ra khi train hoặc detect, chứa rất nhiều file rác nặng
+runs/
+
+# --- DATABASE ---
 traffic.db
 
-# Bỏ qua video upload và ảnh bằng chứng 
+# --- DỮ LIỆU CHẠY THỰC TẾ (Runtime Data) ---
 static/uploads/*
 static/evidence/*
-
-# Giữ lại thư mục rỗng 
+# Giữ lại thư mục rỗng để Git không xóa mất thư mục
 !static/uploads/.gitkeep
 !static/evidence/.gitkeep
 
-# Bỏ qua môi trường ảo 
+# --- MÔI TRƯỜNG ẢO & CẤU HÌNH ---
 venv/
 env/
 .env
+.vscode/
+.idea/
+
+# --- FILE RÁC HỆ ĐIỀU HÀNH ---
+.DS_Store
+Thumbs.db
