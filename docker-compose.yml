@@ -6,7 +6,7 @@ services:
     container_name: traffic_ai_container
     
     ports:
-      - "5000:5000"
+      - "5002:5002"
     
    
     shm_size: '4gb' 
