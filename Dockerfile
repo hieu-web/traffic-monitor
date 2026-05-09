@@ -29,7 +29,7 @@ COPY . .
 
 RUN mkdir -p static/uploads static/evidence
 
-EXPOSE 5000
+EXPOSE 5002
 
 
 CMD ["python", "app.py"]
